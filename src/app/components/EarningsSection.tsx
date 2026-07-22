@@ -21,25 +21,29 @@ const data: Record<string, EarningsRow[]> = {
     { quarter: "24Q2", revenue: 74000, operatingProfit: 10400, netProfit: 9830, beat: true },
     { quarter: "24Q3E", revenue: 82000, operatingProfit: 14000, netProfit: 13200, beat: null, estimate: true },
   ],
+  // SK하이닉스 — 25Q4/26Q1 실제 발표치, 26Q2는 컨센서스(2026.07.29 실적 발표 예정)
   "000660": [
-    { quarter: "24Q1", revenue: 12430, operatingProfit: 2890, netProfit: 2380, beat: true },
-    { quarter: "24Q2", revenue: 16540, operatingProfit: 5470, netProfit: 4210, beat: true },
-    { quarter: "24Q3E", revenue: 19200, operatingProfit: 7100, netProfit: 5500, beat: null, estimate: true },
+    { quarter: "25Q4", revenue: 328270, operatingProfit: 191700, netProfit: null, beat: true },
+    { quarter: "26Q1", revenue: 525763, operatingProfit: 376103, netProfit: 403459, beat: true },
+    { quarter: "26Q2E", revenue: 835000, operatingProfit: 641632, netProfit: null, beat: null, estimate: true },
   ],
+  // NVIDIA — FY26Q4/FY27Q1 실제 발표치, FY27Q2는 회사 가이던스(2026.08 실적 발표 예정)
   "NVDA": [
-    { quarter: "FY25Q1", revenue: 26000, operatingProfit: 16900, netProfit: 14880, beat: true },
-    { quarter: "FY25Q2", revenue: 30040, operatingProfit: 19940, netProfit: 16952, beat: true },
-    { quarter: "FY25Q3E", revenue: 32500, operatingProfit: 21500, netProfit: 17800, beat: null, estimate: true },
+    { quarter: "FY26Q4", revenue: 68000, operatingProfit: 44299, netProfit: 43000, beat: true },
+    { quarter: "FY27Q1", revenue: 81600, operatingProfit: 53536, netProfit: 58300, beat: true },
+    { quarter: "FY27Q2E", revenue: 91000, operatingProfit: null, netProfit: null, beat: null, estimate: true },
   ],
+  // Apple — FY26Q1/FY26Q2 실제 발표치, FY26Q3는 컨센서스(2026.07.30 실적 발표 예정)
   "AAPL": [
-    { quarter: "FY24Q2", revenue: 90753, operatingProfit: 27900, netProfit: 23636, beat: true },
-    { quarter: "FY24Q3", revenue: 85777, operatingProfit: 25400, netProfit: 21448, beat: false },
-    { quarter: "FY24Q4E", revenue: 94500, operatingProfit: 29800, netProfit: 25200, beat: null, estimate: true },
+    { quarter: "FY26Q1", revenue: 143800, operatingProfit: 50900, netProfit: 42100, beat: true },
+    { quarter: "FY26Q2", revenue: 111200, operatingProfit: 35885, netProfit: 29578, beat: true },
+    { quarter: "FY26Q3E", revenue: 108900, operatingProfit: null, netProfit: null, beat: null, estimate: true },
   ],
+  // 카카오 — 25Q4/26Q1 실제 발표치, 26Q2는 컨센서스(2026.08.06 실적 발표 예정)
   "035720": [
-    { quarter: "24Q1", revenue: 19100, operatingProfit: 1420, netProfit: 890, beat: false },
-    { quarter: "24Q2", revenue: 20050, operatingProfit: 1780, netProfit: 1150, beat: true },
-    { quarter: "24Q3E", revenue: 20800, operatingProfit: 1900, netProfit: 1300, beat: null, estimate: true },
+    { quarter: "25Q4", revenue: 21332, operatingProfit: 2034, netProfit: 5257, beat: false },
+    { quarter: "26Q1", revenue: 19421, operatingProfit: 2114, netProfit: 2268, beat: false },
+    { quarter: "26Q2E", revenue: 20500, operatingProfit: null, netProfit: null, beat: null, estimate: true },
   ],
   // 삼성바이오로직스 — 25Q4/26Q1 실제 발표치, 26Q2는 증권사 컨센서스(2026.07.23 실적 발표 예정)
   "207940": [
