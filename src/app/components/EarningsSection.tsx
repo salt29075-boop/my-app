@@ -55,11 +55,11 @@ export default function EarningsSection() {
         <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>단위: {units[selected]}</p>
       </div>
 
-      <table className="w-full text-sm mt-2">
+      <table className="w-full text-xs mt-2">
         <thead>
           <tr style={{ borderBottom: `1px solid var(--border)` }}>
-            {["분기", "매출", "영업이익", "순이익", "EPS", "컨센 대비"].map((h) => (
-              <th key={h} className="px-4 py-2 text-left text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+            {["분기", "매출", "영업익", "순이익", "결과"].map((h) => (
+              <th key={h} className="px-2 py-2 text-left font-medium" style={{ color: "var(--text-secondary)" }}>
                 {h}
               </th>
             ))}
@@ -71,30 +71,29 @@ export default function EarningsSection() {
               key={row.quarter}
               style={{ borderBottom: i < rows.length - 1 ? `1px solid var(--border)` : undefined }}
             >
-              <td className="px-4 py-3 font-mono font-semibold">
+              <td className="px-2 py-2 font-mono font-semibold whitespace-nowrap">
                 <span style={{ color: row.beat === null ? "var(--yellow)" : "var(--text-primary)" }}>
                   {row.quarter}
                 </span>
                 {row.beat === null && (
-                  <span className="ml-1 text-xs px-1 rounded" style={{ background: "var(--surface-2)", color: "var(--yellow)" }}>
+                  <span className="ml-1 px-1 rounded" style={{ background: "var(--surface-2)", color: "var(--yellow)" }}>
                     예상
                   </span>
                 )}
               </td>
-              <td className="px-4 py-3 font-mono">{row.revenue.toLocaleString()}</td>
-              <td className="px-4 py-3 font-mono" style={{ color: "var(--green)" }}>{row.operatingProfit.toLocaleString()}</td>
-              <td className="px-4 py-3 font-mono">{row.netProfit.toLocaleString()}</td>
-              <td className="px-4 py-3 font-mono">{row.eps}</td>
-              <td className="px-4 py-3">
+              <td className="px-2 py-2 font-mono">{row.revenue.toLocaleString()}</td>
+              <td className="px-2 py-2 font-mono" style={{ color: "var(--green)" }}>{row.operatingProfit.toLocaleString()}</td>
+              <td className="px-2 py-2 font-mono">{row.netProfit.toLocaleString()}</td>
+              <td className="px-2 py-2 whitespace-nowrap">
                 {row.beat === null ? (
-                  <span className="text-xs" style={{ color: "var(--text-secondary)" }}>—</span>
+                  <span style={{ color: "var(--text-secondary)" }}>—</span>
                 ) : row.beat ? (
-                  <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: "rgba(63,185,80,0.15)", color: "var(--green)" }}>
-                    어닝 서프라이즈
+                  <span className="px-1.5 py-0.5 rounded font-semibold whitespace-nowrap" style={{ background: "rgba(63,185,80,0.15)", color: "var(--green)" }}>
+                    ↑ 서프라이즈
                   </span>
                 ) : (
-                  <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ background: "rgba(248,81,73,0.15)", color: "var(--red)" }}>
-                    미스
+                  <span className="px-1.5 py-0.5 rounded font-semibold whitespace-nowrap" style={{ background: "rgba(248,81,73,0.15)", color: "var(--red)" }}>
+                    ↓ 미스
                   </span>
                 )}
               </td>
