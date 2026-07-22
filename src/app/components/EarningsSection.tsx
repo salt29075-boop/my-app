@@ -4,37 +4,74 @@ import { useState } from "react";
 import { useHoldings } from "../contexts/HoldingsContext";
 import SectionCard from "./SectionCard";
 
-type EarningsRow = { quarter: string; revenue: number; operatingProfit: number; netProfit: number; eps: number; beat: boolean | null };
+type EarningsRow = {
+  quarter: string;
+  revenue: number;
+  operatingProfit: number | null;
+  netProfit: number | null;
+  /** 컨센서스 대비 실적 서프라이즈 여부. 비교 데이터가 없으면 null */
+  beat: boolean | null;
+  /** 아직 발표되지 않아 컨센서스 추정치인 경우 true */
+  estimate?: boolean;
+};
 
 const data: Record<string, EarningsRow[]> = {
   "005930": [
-    { quarter: "24Q1", revenue: 71900, operatingProfit: 6600, netProfit: 6610, eps: 984, beat: true },
-    { quarter: "24Q2", revenue: 74000, operatingProfit: 10400, netProfit: 9830, eps: 1463, beat: true },
-    { quarter: "24Q3E", revenue: 82000, operatingProfit: 14000, netProfit: 13200, eps: 1965, beat: null },
+    { quarter: "24Q1", revenue: 71900, operatingProfit: 6600, netProfit: 6610, beat: true },
+    { quarter: "24Q2", revenue: 74000, operatingProfit: 10400, netProfit: 9830, beat: true },
+    { quarter: "24Q3E", revenue: 82000, operatingProfit: 14000, netProfit: 13200, beat: null, estimate: true },
   ],
   "000660": [
-    { quarter: "24Q1", revenue: 12430, operatingProfit: 2890, netProfit: 2380, eps: 3248, beat: true },
-    { quarter: "24Q2", revenue: 16540, operatingProfit: 5470, netProfit: 4210, eps: 5747, beat: true },
-    { quarter: "24Q3E", revenue: 19200, operatingProfit: 7100, netProfit: 5500, eps: 7509, beat: null },
+    { quarter: "24Q1", revenue: 12430, operatingProfit: 2890, netProfit: 2380, beat: true },
+    { quarter: "24Q2", revenue: 16540, operatingProfit: 5470, netProfit: 4210, beat: true },
+    { quarter: "24Q3E", revenue: 19200, operatingProfit: 7100, netProfit: 5500, beat: null, estimate: true },
   ],
   "NVDA": [
-    { quarter: "FY25Q1", revenue: 26000, operatingProfit: 16900, netProfit: 14880, eps: 5.98, beat: true },
-    { quarter: "FY25Q2", revenue: 30040, operatingProfit: 19940, netProfit: 16952, eps: 0.68, beat: true },
-    { quarter: "FY25Q3E", revenue: 32500, operatingProfit: 21500, netProfit: 17800, eps: 0.72, beat: null },
+    { quarter: "FY25Q1", revenue: 26000, operatingProfit: 16900, netProfit: 14880, beat: true },
+    { quarter: "FY25Q2", revenue: 30040, operatingProfit: 19940, netProfit: 16952, beat: true },
+    { quarter: "FY25Q3E", revenue: 32500, operatingProfit: 21500, netProfit: 17800, beat: null, estimate: true },
   ],
   "AAPL": [
-    { quarter: "FY24Q2", revenue: 90753, operatingProfit: 27900, netProfit: 23636, eps: 1.53, beat: true },
-    { quarter: "FY24Q3", revenue: 85777, operatingProfit: 25400, netProfit: 21448, eps: 1.4, beat: false },
-    { quarter: "FY24Q4E", revenue: 94500, operatingProfit: 29800, netProfit: 25200, eps: 1.6, beat: null },
+    { quarter: "FY24Q2", revenue: 90753, operatingProfit: 27900, netProfit: 23636, beat: true },
+    { quarter: "FY24Q3", revenue: 85777, operatingProfit: 25400, netProfit: 21448, beat: false },
+    { quarter: "FY24Q4E", revenue: 94500, operatingProfit: 29800, netProfit: 25200, beat: null, estimate: true },
   ],
   "035720": [
-    { quarter: "24Q1", revenue: 19100, operatingProfit: 1420, netProfit: 890, eps: 380, beat: false },
-    { quarter: "24Q2", revenue: 20050, operatingProfit: 1780, netProfit: 1150, eps: 490, beat: true },
-    { quarter: "24Q3E", revenue: 20800, operatingProfit: 1900, netProfit: 1300, eps: 550, beat: null },
+    { quarter: "24Q1", revenue: 19100, operatingProfit: 1420, netProfit: 890, beat: false },
+    { quarter: "24Q2", revenue: 20050, operatingProfit: 1780, netProfit: 1150, beat: true },
+    { quarter: "24Q3E", revenue: 20800, operatingProfit: 1900, netProfit: 1300, beat: null, estimate: true },
+  ],
+  // 삼성바이오로직스 — 25Q4/26Q1 실제 발표치, 26Q2는 증권사 컨센서스(2026.07.23 실적 발표 예정)
+  "207940": [
+    { quarter: "25Q4", revenue: 12857, operatingProfit: 5283, netProfit: null, beat: false },
+    { quarter: "26Q1", revenue: 12571, operatingProfit: 5808, netProfit: 4692, beat: true },
+    { quarter: "26Q2E", revenue: 13100, operatingProfit: null, netProfit: null, beat: null, estimate: true },
+  ],
+  // 레인보우로보틱스 — 분기별 실제 매출 발표치(영업이익/순이익은 26Q1만 공시 확인)
+  "277810": [
+    { quarter: "25Q3", revenue: 106.9, operatingProfit: null, netProfit: null, beat: null },
+    { quarter: "25Q4", revenue: 130.2, operatingProfit: null, netProfit: null, beat: null },
+    { quarter: "26Q1", revenue: 90.6, operatingProfit: -15.7, netProfit: -9.0, beat: null },
+  ],
+  // 두산로보틱스 — 25Q4/26Q1 실제 발표치, 26Q2는 컨센서스(2026.07.24 실적 발표 예정)
+  "454910": [
+    { quarter: "25Q4", revenue: 130, operatingProfit: -164.5, netProfit: null, beat: false },
+    { quarter: "26Q1", revenue: 153, operatingProfit: -121, netProfit: -92, beat: null },
+    { quarter: "26Q2E", revenue: 151.4, operatingProfit: null, netProfit: null, beat: null, estimate: true },
+  ],
+  // 셀트리온 — 26Q2까지 잠정실적 공시 완료(2026.07.03 발표)
+  "068270": [
+    { quarter: "25Q4", revenue: 13302, operatingProfit: 4752, netProfit: null, beat: true },
+    { quarter: "26Q1", revenue: 11450, operatingProfit: 3219, netProfit: 3498, beat: true },
+    { quarter: "26Q2", revenue: 13000, operatingProfit: 4300, netProfit: null, beat: false },
   ],
 };
 
 const unitByCurrency: Record<"KRW" | "USD", string> = { KRW: "억원", USD: "백만$" };
+
+function formatCell(value: number | null) {
+  return value === null ? "—" : value.toLocaleString();
+}
 
 export default function EarningsSection() {
   const { holdings } = useHoldings();
@@ -101,18 +138,18 @@ export default function EarningsSection() {
                     style={{ borderBottom: i < rows.length - 1 ? `1px solid var(--border)` : undefined }}
                   >
                     <td className="px-2 py-2 font-mono font-semibold whitespace-nowrap">
-                      <span style={{ color: row.beat === null ? "var(--yellow)" : "var(--text-primary)" }}>
+                      <span style={{ color: row.estimate ? "var(--yellow)" : "var(--text-primary)" }}>
                         {row.quarter}
                       </span>
-                      {row.beat === null && (
+                      {row.estimate && (
                         <span className="ml-1 px-1 rounded" style={{ background: "var(--surface-2)", color: "var(--yellow)" }}>
                           예상
                         </span>
                       )}
                     </td>
-                    <td className="px-2 py-2 font-mono">{row.revenue.toLocaleString()}</td>
-                    <td className="px-2 py-2 font-mono" style={{ color: "var(--green)" }}>{row.operatingProfit.toLocaleString()}</td>
-                    <td className="px-2 py-2 font-mono">{row.netProfit.toLocaleString()}</td>
+                    <td className="px-2 py-2 font-mono">{formatCell(row.revenue)}</td>
+                    <td className="px-2 py-2 font-mono" style={{ color: row.operatingProfit === null ? "var(--text-secondary)" : row.operatingProfit >= 0 ? "var(--green)" : "var(--red)" }}>{formatCell(row.operatingProfit)}</td>
+                    <td className="px-2 py-2 font-mono" style={{ color: row.netProfit !== null && row.netProfit < 0 ? "var(--red)" : undefined }}>{formatCell(row.netProfit)}</td>
                     <td className="px-2 py-2 whitespace-nowrap">
                       {row.beat === null ? (
                         <span style={{ color: "var(--text-secondary)" }}>—</span>
