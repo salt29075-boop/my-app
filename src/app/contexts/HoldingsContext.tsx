@@ -22,25 +22,49 @@ const DEFAULTS: Holding[] = [
 
 type HoldingsContextType = {
   holdings: Holding[];
+  livePrices: Record<string, number>;
+  pricesUpdatedAt: Date | null;
+  pricesLoading: boolean;
   add: (h: Omit<Holding, "id">) => void;
   update: (h: Holding) => void;
   remove: (id: string) => void;
   importJSON: (json: string) => void;
   exportJSON: () => void;
+  refreshPrices: () => Promise<void>;
 };
 
 const HoldingsContext = createContext<HoldingsContextType | null>(null);
 
+const PRICE_CACHE_KEY = "livePricesCache";
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5분
+
+function loadPriceCache(): { prices: Record<string, number>; at: number } | null {
+  try {
+    const raw = localStorage.getItem(PRICE_CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw);
+    if (Date.now() - cache.at < CACHE_TTL_MS) return cache;
+  } catch {}
+  return null;
+}
+
 export function HoldingsProvider({ children }: { children: ReactNode }) {
   const [holdings, setHoldings] = useState<Holding[]>(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+  const [pricesUpdatedAt, setPricesUpdatedAt] = useState<Date | null>(null);
+  const [pricesLoading, setPricesLoading] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("holdings");
     if (saved) {
-      try {
-        setHoldings(JSON.parse(saved));
-      } catch {}
+      try { setHoldings(JSON.parse(saved)); } catch {}
+    }
+    // 캐시된 가격 복원
+    const cache = loadPriceCache();
+    if (cache) {
+      setLivePrices(cache.prices);
+      setPricesUpdatedAt(new Date(cache.at));
     }
     setLoaded(true);
   }, []);
@@ -48,6 +72,37 @@ export function HoldingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (loaded) localStorage.setItem("holdings", JSON.stringify(holdings));
   }, [holdings, loaded]);
+
+  const refreshPrices = useCallback(async () => {
+    if (pricesLoading) return;
+    const tickers = holdings.map((h) => h.ticker).join(",");
+    if (!tickers) return;
+    setPricesLoading(true);
+    try {
+      const res = await fetch(`/api/prices?tickers=${encodeURIComponent(tickers)}`);
+      const data: Record<string, number | null> = await res.json();
+      const valid: Record<string, number> = {};
+      for (const [k, v] of Object.entries(data)) {
+        if (v !== null) valid[k] = v;
+      }
+      setLivePrices(valid);
+      const now = Date.now();
+      setPricesUpdatedAt(new Date(now));
+      localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ prices: valid, at: now }));
+    } catch {
+      // 실패 시 기존 값 유지
+    } finally {
+      setPricesLoading(false);
+    }
+  }, [holdings, pricesLoading]);
+
+  // 로드 완료 후 최초 1회 가격 조회
+  useEffect(() => {
+    if (loaded && Object.keys(livePrices).length === 0) {
+      refreshPrices();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded]);
 
   const add = useCallback((h: Omit<Holding, "id">) => {
     setHoldings((prev) => [...prev, { ...h, id: crypto.randomUUID() }]);
@@ -81,7 +136,10 @@ export function HoldingsProvider({ children }: { children: ReactNode }) {
   }, [holdings]);
 
   return (
-    <HoldingsContext.Provider value={{ holdings, add, update, remove, importJSON, exportJSON }}>
+    <HoldingsContext.Provider value={{
+      holdings, livePrices, pricesUpdatedAt, pricesLoading,
+      add, update, remove, importJSON, exportJSON, refreshPrices,
+    }}>
       {children}
     </HoldingsContext.Provider>
   );
