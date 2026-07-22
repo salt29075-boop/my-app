@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 
 export type Holding = {
   id: string;
@@ -25,6 +25,7 @@ type HoldingsContextType = {
   livePrices: Record<string, number>;
   pricesUpdatedAt: Date | null;
   pricesLoading: boolean;
+  isMarketOpen: boolean;
   add: (h: Omit<Holding, "id">) => void;
   update: (h: Holding) => void;
   remove: (id: string) => void;
@@ -36,7 +37,23 @@ type HoldingsContextType = {
 const HoldingsContext = createContext<HoldingsContextType | null>(null);
 
 const PRICE_CACHE_KEY = "livePricesCache";
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5분
+const CACHE_TTL_MS = 90 * 1000;        // 클라이언트 캐시 90초
+const AUTO_REFRESH_MS = 60 * 1000;     // 자동 새로고침 60초
+
+// 한국/미국 장 중 여부 (KST 09:00–15:30, EST 09:30–16:00)
+function checkMarketOpen(): boolean {
+  const now = new Date();
+  const kstMin = ((now.getUTCHours() + 9) % 24) * 60 + now.getUTCMinutes();
+  const day = new Date(now.getTime() + 9 * 3600 * 1000).getUTCDay();
+  const krOpen = day >= 1 && day <= 5 && kstMin >= 9 * 60 && kstMin < 15 * 60 + 30;
+
+  const estOffset = -5; // EST (서머타임 미적용, 근사치)
+  const estMin = ((now.getUTCHours() + 24 + estOffset) % 24) * 60 + now.getUTCMinutes();
+  const usDay = new Date(now.getTime() + estOffset * 3600 * 1000).getUTCDay();
+  const usOpen = usDay >= 1 && usDay <= 5 && estMin >= 9 * 60 + 30 && estMin < 16 * 60;
+
+  return krOpen || usOpen;
+}
 
 function loadPriceCache(): { prices: Record<string, number>; at: number } | null {
   try {
@@ -54,18 +71,20 @@ export function HoldingsProvider({ children }: { children: ReactNode }) {
   const [livePrices, setLivePrices] = useState<Record<string, number>>({});
   const [pricesUpdatedAt, setPricesUpdatedAt] = useState<Date | null>(null);
   const [pricesLoading, setPricesLoading] = useState(false);
+  const [isMarketOpen, setIsMarketOpen] = useState(false);
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("holdings");
     if (saved) {
       try { setHoldings(JSON.parse(saved)); } catch {}
     }
-    // 캐시된 가격 복원
     const cache = loadPriceCache();
     if (cache) {
       setLivePrices(cache.prices);
       setPricesUpdatedAt(new Date(cache.at));
     }
+    setIsMarketOpen(checkMarketOpen());
     setLoaded(true);
   }, []);
 
@@ -74,9 +93,10 @@ export function HoldingsProvider({ children }: { children: ReactNode }) {
   }, [holdings, loaded]);
 
   const refreshPrices = useCallback(async () => {
-    if (pricesLoading) return;
+    if (loadingRef.current) return;
     const tickers = holdings.map((h) => h.ticker).join(",");
     if (!tickers) return;
+    loadingRef.current = true;
     setPricesLoading(true);
     try {
       const res = await fetch(`/api/prices?tickers=${encodeURIComponent(tickers)}`);
@@ -85,24 +105,39 @@ export function HoldingsProvider({ children }: { children: ReactNode }) {
       for (const [k, v] of Object.entries(data)) {
         if (v !== null) valid[k] = v;
       }
-      setLivePrices(valid);
-      const now = Date.now();
-      setPricesUpdatedAt(new Date(now));
-      localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ prices: valid, at: now }));
+      if (Object.keys(valid).length > 0) {
+        setLivePrices(valid);
+        const now = Date.now();
+        setPricesUpdatedAt(new Date(now));
+        localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({ prices: valid, at: now }));
+      }
     } catch {
       // 실패 시 기존 값 유지
     } finally {
+      loadingRef.current = false;
       setPricesLoading(false);
     }
-  }, [holdings, pricesLoading]);
+  }, [holdings]);
 
-  // 로드 완료 후 최초 1회 가격 조회
+  // 최초 로드
   useEffect(() => {
-    if (loaded && Object.keys(livePrices).length === 0) {
-      refreshPrices();
-    }
+    if (loaded) refreshPrices();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded]);
+
+  // 장 중 자동 새로고침 (60초 주기)
+  useEffect(() => {
+    if (!loaded) return;
+
+    const tick = () => {
+      const open = checkMarketOpen();
+      setIsMarketOpen(open);
+      if (open) refreshPrices();
+    };
+
+    const id = setInterval(tick, AUTO_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [loaded, refreshPrices]);
 
   const add = useCallback((h: Omit<Holding, "id">) => {
     setHoldings((prev) => [...prev, { ...h, id: crypto.randomUUID() }]);
@@ -137,7 +172,7 @@ export function HoldingsProvider({ children }: { children: ReactNode }) {
 
   return (
     <HoldingsContext.Provider value={{
-      holdings, livePrices, pricesUpdatedAt, pricesLoading,
+      holdings, livePrices, pricesUpdatedAt, pricesLoading, isMarketOpen,
       add, update, remove, importJSON, exportJSON, refreshPrices,
     }}>
       {children}

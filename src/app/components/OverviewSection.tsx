@@ -8,7 +8,7 @@ function pnl(avg: number, cur: number) {
 }
 
 export default function OverviewSection() {
-  const { holdings, livePrices, pricesUpdatedAt, pricesLoading, refreshPrices } = useHoldings();
+  const { holdings, livePrices, pricesUpdatedAt, pricesLoading, isMarketOpen, refreshPrices } = useHoldings();
 
   // 실시간 가격 우선, 없으면 저장된 현재가 사용
   const priceOf = (ticker: string, fallback: number) => livePrices[ticker] ?? fallback;
@@ -40,6 +40,12 @@ export default function OverviewSection() {
           {updatedLabel && (
             <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
               {updatedLabel} 기준
+            </span>
+          )}
+          {isMarketOpen && !pricesLoading && (
+            <span className="text-xs flex items-center gap-1" style={{ color: "var(--green)" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+              60초 자동갱신
             </span>
           )}
           <button

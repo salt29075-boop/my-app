@@ -6,7 +6,7 @@ async function fetchYahooChart(symbol: string): Promise<{ price: number; time: n
   try {
     const res = await fetch(
       `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
-      { headers: HEADERS, next: { revalidate: 60 } }
+      { headers: HEADERS, next: { revalidate: 30 } }
     );
     const data = await res.json();
     const meta = data?.chart?.result?.[0]?.meta;
