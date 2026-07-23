@@ -2,7 +2,7 @@ import { HoldingsProvider } from "./contexts/HoldingsContext";
 import Header from "./components/Header";
 import OverviewSection from "./components/OverviewSection";
 import NewsSection from "./components/NewsSection";
-import CheckSection from "./components/CheckSection";
+import PriceChartSection from "./components/PriceChartSection";
 import EarningsSection from "./components/EarningsSection";
 
 export default function Dashboard() {
@@ -16,7 +16,7 @@ export default function Dashboard() {
             <NewsSection />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <CheckSection />
+            <PriceChartSection />
             <EarningsSection />
           </div>
         </main>
