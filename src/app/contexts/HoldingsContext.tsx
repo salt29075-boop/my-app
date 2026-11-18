@@ -40,17 +40,23 @@ const PRICE_CACHE_KEY = "livePricesCache";
 const CACHE_TTL_MS = 90 * 1000;        // 클라이언트 캐시 90초
 const AUTO_REFRESH_MS = 60 * 1000;     // 자동 새로고침 60초
 
-// 한국/미국 장 중 여부 (KST 09:00–15:30, EST 09:30–16:00)
-function checkMarketOpen(): boolean {
-  const now = new Date();
-  const kstMin = ((now.getUTCHours() + 9) % 24) * 60 + now.getUTCMinutes();
-  const day = new Date(now.getTime() + 9 * 3600 * 1000).getUTCDay();
-  const krOpen = day >= 1 && day <= 5 && kstMin >= 9 * 60 && kstMin < 15 * 60 + 30;
+// 해당 타임존의 요일(0=일)과 자정 이후 분
+function zonedTime(timeZone: string): { day: number; min: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(get("weekday"));
+  return { day, min: Number(get("hour")) * 60 + Number(get("minute")) };
+}
 
-  const estOffset = -5; // EST (서머타임 미적용, 근사치)
-  const estMin = ((now.getUTCHours() + 24 + estOffset) % 24) * 60 + now.getUTCMinutes();
-  const usDay = new Date(now.getTime() + estOffset * 3600 * 1000).getUTCDay();
-  const usOpen = usDay >= 1 && usDay <= 5 && estMin >= 9 * 60 + 30 && estMin < 16 * 60;
+// 거래 시간 여부 — 한국: NXT 포함 08:00–20:00 KST / 미국: 프리·애프터 포함 04:00–20:00 ET (서머타임 자동 반영)
+function checkMarketOpen(): boolean {
+  const kr = zonedTime("Asia/Seoul");
+  const krOpen = kr.day >= 1 && kr.day <= 5 && kr.min >= 8 * 60 && kr.min < 20 * 60;
+
+  const us = zonedTime("America/New_York");
+  const usOpen = us.day >= 1 && us.day <= 5 && us.min >= 4 * 60 && us.min < 20 * 60;
 
   return krOpen || usOpen;
 }
